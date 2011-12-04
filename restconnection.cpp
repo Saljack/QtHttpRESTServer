@@ -19,41 +19,60 @@
 
 #include "restconnection.h"
 #include <qhostaddress.h>
+#include <QSslSocket>
+#include <QDate>
 
-RESTConnection::RESTConnection(int socketDescriptor, QObject* parent): QThread(parent), m_socketDescriptor(socketDescriptor) {
+RESTConnection::RESTConnection(int socketDescriptor, QString certificate, QSslKey* key, QObject* parent)
+        :QThread(parent), m_socketDescriptor(socketDescriptor), m_cert(certificate), m_key(key) {
 
 }
 
 
 void RESTConnection::run() {
-    QTcpSocket socket;
-    if (!socket.setSocketDescriptor(m_socketDescriptor)) {
-        qDebug() << socket.error();
-        return;
+    m_socket = new QSslSocket();
+    
+    if (m_socket->setSocketDescriptor(m_socketDescriptor)) {
+        m_socket->setLocalCertificate(m_cert);
+        m_socket->setPrivateKey(*m_key);
+        connect(m_socket, SIGNAL(encrypted()), this, SLOT(handshakeComplete()));
+        m_socket->setPeerVerifyMode(QSslSocket::VerifyNone);
+        m_socket->startServerEncryption();
     }
 
-    socket.waitForReadyRead();
+    exec();
+}
 
-    if (socket.canReadLine()) {
-        QStringList tokens = QString(socket.readLine()).split(QRegExp("[ \r\n][ \r\n]*"));
-	qDebug() << m_socketDescriptor << tokens;
-	
+void RESTConnection::handshakeComplete()
+{
+    connect(m_socket, SIGNAL(disconnected()), this, SLOT(connectionClosed()));
+    connect(m_socket, SIGNAL(readyRead()), this, SLOT(receiveData()));
+}
+
+void RESTConnection::connectionClosed()
+{
+    m_socket->close();
+    m_socket->deleteLater();
+}
+
+void RESTConnection::receiveData()
+{
+//      if (m_socket->canReadLine()) {
+        QStringList tokens = QString(m_socket->readLine()).split(QRegExp("[ \r\n][ \r\n]*"));
+        qDebug() << m_socketDescriptor << tokens;
+
         if (tokens[0] == "GET") {
             QByteArray r = "HTTP/1.0 200 Ok\r\n"
                            "Content-Type: text/html; charset=\"utf-8\"\r\n"
                            "\r\n"
                            "<h1>Nothing to see here</h1>\n";
-            if (socket.isWritable()) {
-                socket.write(r);
-		socket.waitForBytesWritten();
+            if (m_socket->isWritable()) {
+                m_socket->write(r);
+                m_socket->waitForBytesWritten();
             }
-            socket.close();
-	  
+            m_socket->close();
+
         }
-    }
+//     }
 }
 
-void RESTConnection::readyToRead() {
-
-}
-
+#include "restconnection.moc"

@@ -22,16 +22,27 @@
 #include <QThread>
 #include <QTcpSocket>
 #include <QStringList>
+#include <QSslKey>
+#include <QSslCertificate>
+#include <QSslSocket>
 
 class RESTConnection : public QThread {
-    public:
-        RESTConnection(int socketDescriptor, QObject* parent = 0);
-        virtual void run();
+    Q_OBJECT
+public:
+    RESTConnection(int socketDescriptor, QString certificate, QSslKey* key, QObject* parent = 0);
+    virtual void run();
 
-    private:
-        int m_socketDescriptor;
-    private slots:
-        void readyToRead();
+private:
+    int m_socketDescriptor;
+    QSslKey* m_key;
+    QString m_cert;
+protected slots:
+    void handshakeComplete();
+    void connectionClosed();
+    void receiveData();
+protected:
+    QSslSocket* m_socket;
+
 };
 
 #endif // RESTCONNECTION_H
