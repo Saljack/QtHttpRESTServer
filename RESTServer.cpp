@@ -1,9 +1,9 @@
 #include "RESTServer.h"
-#include "restconnection.h"
 #include <QString>
 #include <QFile>
 #include <QStringList>
 #include <QHash>
+#include <QFileInfo>
 #include "serverrequest.h"
 
 RESTServer::RESTServer(int port, QObject* parent) : QTcpServer(parent) {
