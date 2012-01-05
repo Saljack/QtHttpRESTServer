@@ -1,5 +1,5 @@
 #include <QCoreApplication>
-#include "RESTServer.h"
+#include "restserver.h"
 
 
 int main(int argc, char** argv)

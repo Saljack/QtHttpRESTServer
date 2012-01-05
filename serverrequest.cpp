@@ -53,7 +53,6 @@ bool ServerRequest::parseFirstLine()
 
 //     if (m_firstLine->isEmpty()) {
     if (m_firstLine[0] == "GET") {
-
         setMethod(GET);
     } else if (m_firstLine[0] == "PUT") {
         setMethod(PUT);
@@ -76,10 +75,11 @@ bool ServerRequest::parseFirstLine()
 bool ServerRequest::isAuthorized(const QByteArray& authBase64)
 {
     if (!m_header.isEmpty()) {
-	
         if (m_header.contains("Authorization")) {
-            QStringList* auth = m_header.value("Authorization");
+            QStringList* auth = m_header.value("Authorization");//get line with authorization
+	    
             if (auth->length() > 2) {
+	      
                 if (auth->at(1) == "Basic") {
                     if (auth->at(2).compare(authBase64,Qt::CaseInsensitive) == 0) {
                         return true;
@@ -94,18 +94,13 @@ bool ServerRequest::isAuthorized(const QByteArray& authBase64)
 
 bool ServerRequest::insertRawHeaderLine(QString line)
 {
-//     qDebug() << line;
     QStringList* ln = new QStringList(line.split(QRegExp("[ \r\n][ \r\n]*")));
-//
     if (!ln->isEmpty()) {
-//         qDebug() << *ln;
-
         if (ln->at(0) == "\r\n") {//test end of header
 	    delete ln;
             return false;
         }
         m_header.insert((*ln)[0].remove(":"), ln); //remove :
-// 	qDebug() << "Vkladam do headers" << *ln;
         return true;
     }
     return false;
@@ -113,7 +108,6 @@ bool ServerRequest::insertRawHeaderLine(QString line)
 
 bool ServerRequest::setFirstLine(QString firstLine)
 {
-
     m_firstLine = firstLine.split(QRegExp("[ \r\n][ \r\n]*"));
     return parseFirstLine();
 }
